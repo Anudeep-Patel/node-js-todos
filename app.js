@@ -89,6 +89,17 @@ const validDueDate = (request, response, next) => {
   }
 };
 
+const convertDbObjectToResponseObject = (dbObject) => {
+  return {
+    id: dbObject.id,
+    todo: dbObject.todo,
+    priority: dbObject.priority,
+    status: dbObject.status,
+    category: dbObject.category,
+    dueDate: dbObject.due_date,
+  };
+};
+
 app.get(
   "/todos/",
   validStatus,
@@ -121,7 +132,9 @@ app.get(
         WHERE todo LIKE '%${search_q}%';`;
     }
     data = await db.all(getTodosQuery);
-    response.send(data);
+    response.send(
+      data.map((eachObject) => convertDbObjectToResponseObject(eachObject))
+    );
   }
 );
 
@@ -129,15 +142,17 @@ app.get("/todos/:todoId/", async (request, response) => {
   const { todoId } = request.params;
   const getTodoQuery = `SELECT * FROM todo WHERE id = ${todoId};`;
   const todo = await db.get(getTodoQuery);
-  response.send(todo);
+  response.send(convertDbObjectToResponseObject(todo));
 });
 
 app.get("/agenda/", validDueDate, async (request, response) => {
   const { date } = request.query;
   const formatDate = datefns.format(new Date(`${date}`), "yyyy-MM-dd");
-  const getTodoQuery = `SELECT id,todo,priority,category,status,due_date AS dueDate FROM todo WHERE due_date = '${formatDate}';`;
-  const todo = await db.get(getTodoQuery);
-  response.send(todo);
+  const getTodoQuery = `SELECT * FROM todo WHERE due_date = '${formatDate}';`;
+  const todo = await db.all(getTodoQuery);
+  response.send(
+    todo.map((eachTodo) => convertDbObjectToResponseObject(eachTodo))
+  );
 });
 
 app.post(
