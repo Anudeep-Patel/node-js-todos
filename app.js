@@ -89,6 +89,64 @@ const validDueDate = (request, response, next) => {
   }
 };
 
+const postAndPutValidStatus = (request, response, next) => {
+  if ("status" in request.body) {
+    const { status } = request.body;
+    if (statusValues.includes(status)) {
+      next();
+    } else {
+      response.status(400);
+      response.send("Invalid Todo Status");
+    }
+  } else {
+    next();
+  }
+};
+
+const postAndPutValidPriority = (request, response, next) => {
+  if ("priority" in request.body) {
+    const { priority } = request.body;
+    if (priorityValues.includes(priority)) {
+      next();
+    } else {
+      response.status(400);
+      response.send("Invalid Todo Priority");
+    }
+  } else {
+    next();
+  }
+};
+
+const postAndPutValidCategory = (request, response, next) => {
+  if ("category" in request.body) {
+    const { category } = request.body;
+    if (categoryValues.includes(category)) {
+      next();
+    } else {
+      response.status(400);
+      response.send("Invalid Todo Category");
+    }
+  } else {
+    next();
+  }
+};
+
+const postAndPutValidDueDate = (request, response, next) => {
+  if ("date" in request.body) {
+    const { date } = request.body;
+    if (datefns.isMatch(date, "yyyy-MM-dd")) {
+      const datef = datefns.format(new Date(`${date}`), "yyyy-MM-dd");
+      request.date = datef;
+      next();
+    } else {
+      response.status(400);
+      response.send("Invalid Due Date");
+    }
+  } else {
+    next();
+  }
+};
+
 const convertDbObjectToResponseObject = (dbObject) => {
   return {
     id: dbObject.id,
@@ -157,10 +215,10 @@ app.get("/agenda/", validDueDate, async (request, response) => {
 
 app.post(
   "/todos/",
-  validStatus,
-  validPriority,
-  validCategory,
-  validDueDate,
+  postAndPutValidStatus,
+  postAndPutValidPriority,
+  postAndPutValidCategory,
+  postAndPutValidDueDate,
   async (request, response) => {
     const { id, todo, category, priority, status, dueDate } = request.body;
     const postTodoQuery = `INSERT INTO todo(id, todo, category, priority, status, due_date)
@@ -172,10 +230,10 @@ app.post(
 
 app.put(
   "/todos/:todoId/",
-  validStatus,
-  validPriority,
-  validCategory,
-  validDueDate,
+  postAndPutValidStatus,
+  postAndPutValidPriority,
+  postAndPutValidCategory,
+  postAndPutValidDueDate,
   async (request, response) => {
     const { todoId } = request.params;
     const requestBody = request.body;
