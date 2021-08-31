@@ -1,4 +1,5 @@
 const datefns = require("date-fns");
+var isValid = require("date-fns/isValid");
 const express = require("express");
 const { open } = require("sqlite");
 const sqlite3 = require("sqlite3");
@@ -76,9 +77,8 @@ const validCategory = (request, response, next) => {
 const validDueDate = (request, response, next) => {
   if ("date" in request.query) {
     const { date } = request.query;
-    if (datefns.isMatch(date, "yyyy-MM-dd")) {
-      const datef = datefns.format(new Date(`${date}`), "yyyy-MM-dd");
-      request.date = datef;
+    const validDate = isValid(new Date(date));
+    if (validDate) {
       next();
     } else {
       response.status(400);
@@ -132,11 +132,10 @@ const postAndPutValidCategory = (request, response, next) => {
 };
 
 const postAndPutValidDueDate = (request, response, next) => {
-  if ("date" in request.body) {
-    const { date } = request.body;
-    if (datefns.isMatch(date, "yyyy-MM-dd")) {
-      const datef = datefns.format(new Date(`${date}`), "yyyy-MM-dd");
-      request.date = datef;
+  if ("dueDate" in request.body) {
+    const { dueDate } = request.body;
+    const validDate = isValid(new Date(dueDate));
+    if (validDate) {
       next();
     } else {
       response.status(400);
@@ -205,7 +204,7 @@ app.get("/todos/:todoId/", async (request, response) => {
 
 app.get("/agenda/", validDueDate, async (request, response) => {
   const { date } = request.query;
-  const formatDate = datefns.format(new Date(`${date}`), "yyyy-MM-dd");
+  const formatDate = datefns.format(new Date(date), "yyyy-MM-dd");
   const getTodoQuery = `SELECT * FROM todo WHERE due_date = '${formatDate}';`;
   const todo = await db.all(getTodoQuery);
   response.send(
@@ -221,8 +220,9 @@ app.post(
   postAndPutValidDueDate,
   async (request, response) => {
     const { id, todo, category, priority, status, dueDate } = request.body;
+    const formatDate = datefns.format(new Date(dueDate), "yyyy-MM-dd");
     const postTodoQuery = `INSERT INTO todo(id, todo, category, priority, status, due_date)
-      VALUES(${id}, '${todo}', '${category}', '${priority}', '${status}', '${dueDate}');`;
+      VALUES(${id}, '${todo}', '${category}', '${priority}', '${status}', '${formatDate}');`;
     await db.run(postTodoQuery);
     response.send("Todo Successfully Added");
   }
@@ -282,11 +282,12 @@ app.put(
     } else if ("dueDate" in request.body) {
       updateColumn = "Due Date";
       const { dueDate } = request.body;
+      const formatDate = datefns.format(new Date(dueDate), "yyyy-MM-dd");
       updateTodoQuery = `
         UPDATE
         todo
         SET
-        due_date = '${dueDate}'
+        due_date = '${formatDate}'
         WHERE
         id = ${todoId};`;
     }
